@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FDJ Manu - Feuille de Jour</title>
+    
+    <!-- PWA Configuration -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FDJ Manu">
+    <meta name="theme-color" content="#4CAF50">
+    <link rel="manifest" href="./manifest.json">
+    
+    <!-- Icône pour iOS -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect fill='%234CAF50' width='200' height='200'/%3E%3Ctext x='100' y='120' font-size='100' text-anchor='middle' fill='white' font-family='Arial, sans-serif' font-weight='bold'%3E📋%3C/text%3E%3C/svg%3E">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .controls h2 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .activity-selector {
+            margin-bottom: 15px;
+        }
+
+        .activity-selector label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .activity-selector select {
+            width: 100%;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .btn-print {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn-print:hover {
+            background-color: #45a049;
+        }
+
+        /* Feuille A4 */
+        .fdj-container {
+            width: 210mm;
+            height: 297mm;
+            background: white;
+            margin: 0 auto;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 12mm;
+            position: relative;
+        }
+
+        /* Nom MANU en haut à droite */
+        .student-name {
+            position: absolute;
+            top: 12mm;
+            right: 12mm;
+            font-size: 10px;
+            color: #333;
+        }
+
+        /* En-tête */
+        .header-section {
+            margin-top: 0mm;
+            margin-bottom: 5mm;
+        }
+
+        .date-line {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15mm;
+            border-bottom: 2px solid #333;
+            padding-bottom: 1mm;
+        }
+
+        .name-line {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15mm;
+            border-bottom: 2px solid #333;
+            padding-bottom: 1mm;
+        }
+
+        .prenom-line {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5mm;
+            border-bottom: 2px solid #333;
+            padding-bottom: 1mm;
+        }
+
+        .weather-row {
+            margin-bottom: 2mm;
+        }
+
+        .weather-pictos {
+            display: inline-flex;
+            gap: 6px;
+            padding: 4px;
+            background-color: #e8f4f8;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+        }
+
+        .weather-icon {
+            font-size: 24px;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        /* Lignes d'activité */
+        .activity-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            min-height: 65px;
+        }
+
+        .activity-row.empty {
+            display: none;
+        }
+
+        .picto-cell {
+            width: 9%;
+            background-color: #e8f4f8;
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 3px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .picto-icon {
+            font-size: 42px;
+            margin-bottom: 2px;
+        }
+
+        .picto-label {
+            font-size: 7px;
+            font-weight: bold;
+            color: #333;
+            line-height: 1;
+        }
+
+        .activity-block {
+            width: 85%;
+            border: 2px solid #333;
+            border-radius: 6px;
+            padding: 9px;
+            background-color: #fff;
+            cursor: text;
+        }
+        
+        .activity-block[contenteditable="true"]:focus {
+            outline: 2px solid #4CAF50;
+            background-color: #fffef0;
+        }
+        
+        .activity-block[contenteditable="true"]:hover {
+            background-color: #f9f9f9;
+        }
+
+        .feedback-cell {
+            width: 6%;
+            border: 2px solid #333;
+            border-radius: 6px;
+            background-color: #f9f9f9;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1px;
+            gap: 1px;
+        }
+
+        .smiley {
+            font-size: 18px;
+            padding: 2px 5px;
+            border-radius: 6px;
+        }
+
+        .smiley.happy {
+            background-color: #d4edda;
+            border: 2px solid #28a745;
+        }
+
+        .smiley.neutral {
+            background-color: #fff3cd;
+            border: 2px solid #ffc107;
+        }
+
+        .smiley.sad {
+            background-color: #f8d7da;
+            border: 2px solid #dc3545;
+        }
+
+        .activity-title {
+            font-weight: bold;
+            margin-bottom: 4px;
+            font-size: 15px;
+        }
+
+        .activity-description {
+            font-size: 15px;
+            line-height: 1.45;
+            color: #333;
+        }
+
+        /* Impression */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+
+            .controls {
+                display: none;
+            }
+            
+            .activity-block[contenteditable="true"] {
+                cursor: default;
+                outline: none;
+            }
+
+            .fdj-container {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 10mm;
+                box-shadow: none;
+                page-break-after: avoid;
+                page-break-inside: avoid;
+            }
+
+            .activity-row {
+                page-break-inside: avoid;
+                margin-bottom: 6px;
+            }
+
+            @page {
+                size: A4;
+                margin: 0;
+            }
+
+            html, body {
+                height: 297mm;
+                overflow: hidden;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Contrôles -->
+    <div class="controls">
+        <h2>📋 Générateur de Feuille de Jour - Manu</h2>
+        
+        <!-- Bandeau d'installation PWA -->
+        <div id="install-banner" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; display: none;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <strong>📱 Installer l'application sur votre iPhone</strong>
+                    <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">
+                        Appuyez sur <strong>Partager</strong> puis <strong>"Sur l'écran d'accueil"</strong>
+                    </p>
+                </div>
+                <button onclick="document.getElementById('install-banner').style.display='none'" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 8px 15px; border-radius: 4px; cursor: pointer;">OK</button>
+            </div>
+        </div>
+        
+        <p style="background: #e8f4f8; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
+            💡 <strong>Astuce :</strong> Après avoir sélectionné une activité, vous pouvez cliquer directement sur le texte dans la feuille pour le modifier avant d'imprimer !
+        </p>
+        
+        <div class="activity-selector">
+            <label>📖 Lecture/Écriture :</label>
+            <select id="activity1" onchange="updateActivities()">
+                <option value="">-- Pas d'activité --</option>
+                <option value="relier-mots-dessins">4 dessins simples (carotte, sapin, maison, soleil) et 4 mots. Manu relie chaque dessin au bon mot.</option>
+                <option value="entourer-bon-mot">Mot cible donné (ex: maison). 4 mots proches (maison, raison, maïs, mason). Manu entoure le bon mot.</option>
+                <option value="retrouver-mot-texte">Court texte de 2-3 phrases. Mot à chercher donné (ex: vélo). Manu entoure le mot dans le texte.</option>
+                <option value="colorier-mots-identiques">Liste de 8 mots ressemblants avec 3 identiques. Manu colorie les 3 mots identiques.</option>
+                <option value="ecrire-prenom-nom">Manu écrit son prénom (version courte) et son nom sans modèle. Veiller à des lettres de 3cm minimum.</option>
+                <option value="lecture-mots-2-syllabes">5 mots simples de 2 syllabes (tomate, banane, vélo, moto, salade). Manu lit chaque mot à voix haute.</option>
+                <option value="copie-mots-grands">3 mots modèles en lettres de 3cm minimum. Manu recopie en respectant la taille des lettres.</option>
+                <option value="associer-mot-phrase">Phrase courte (Manu mange une pomme). 4 images dont une correspond. Manu montre la bonne image.</option>
+                <option value="completer-mot-image">Image + mot incomplet (SA__N pour sapin). Manu complète les lettres manquantes.</option>
+                <option value="mots-outils-frequents">6 mots fréquents écrits (le, un, et, dans, avec, il). Manu lit rapidement chaque mot.</option>
+            </select>
+        </div>
+
+        <div class="activity-selector">
+            <label>🔢 Mathématiques :</label>
+            <select id="activity2" onchange="updateActivities()">
+                <option value="">-- Pas d'activité --</option>
+                <option value="lire-nombres-59">4 nombres écrits (15, 28, 42, 51). Manu lit chaque nombre à voix haute. PEU D'ÉLÉMENTS.</option>
+                <option value="classer-4-nombres">4 nombres proches (23, 28, 25, 21). Manu les range du plus petit au plus grand.</option>
+                <option value="comparer-dizaines">3 paires de nombres (23 et 31, 45 et 42, 18 et 28). Manu entoure le plus grand.</option>
+                <option value="file-numerique-courte">File courte avec 2 cases vides (20, __, 22, __). Manu complète les nombres manquants.</option>
+                <option value="dizaines-unites-3-nombres">3 nombres donnés (23, 47, 38). Pour chaque nombre, Manu dit combien de dizaines et d'unités.</option>
+                <option value="additions-simples-4">4 additions (10+5, 20+3, 12+4, 15+2). Manu calcule (matériel autorisé).</option>
+                <option value="soustractions-simples-4">4 soustractions (15-5, 18-8, 24-4, 19-9). Manu calcule (matériel autorisé).</option>
+                <option value="probleme-illustre">1 problème simple avec dessin (J'ai 12 billes, j'en gagne 5). Manu résout.</option>
+                <option value="monnaie-4-pieces">4 pièces de monnaie (2x10c, 2x20c). Manu compte le total.</option>
+                <option value="double-3-nombres">3 nombres simples (10, 5, 12). Manu trouve le double de chacun.</option>
+            </select>
+        </div>
+
+        <div class="activity-selector">
+            <label>📅 Repérage temporel :</label>
+            <select id="activity3" onchange="updateActivities()">
+                <option value="">-- Pas d'activité --</option>
+                <option value="ordonner-jours-semaine">7 étiquettes jours mélangées. Manu les remet dans l'ordre (acquis à consolider).</option>
+                <option value="sequencer-4-images">4 images d'une histoire (planter/arroser/pousser/cueillir). Manu les ordonne.</option>
+                <option value="hier-aujourdhui-demain">Calendrier avec aujourd'hui marqué. Manu entoure hier, aujourd'hui, demain avec 3 couleurs différentes.</option>
+                <option value="saisons-4-activites">4 images d'activités (ski, plage, feuilles, fleurs). Manu associe chaque activité à sa saison.</option>
+                <option value="routine-4-moments">4 photos de moments de Manu (réveil, école, déjeuner, coucher). Manu les remet dans l'ordre.</option>
+                <option value="mois-saison-4-mois">4 étiquettes de mois (janvier, mai, juillet, octobre). Manu les classe par saison.</option>
+                <option value="semaine-weekend">Calendrier de la semaine. Manu colorie les jours d'école en bleu et le week-end en vert.</option>
+            </select>
+        </div>
+
+        <div class="activity-selector">
+            <label>✋ Motricité fine :</label>
+            <select id="activity4" onchange="updateActivities()">
+                <option value="">-- Pas d'activité --</option>
+                <option value="gommettes-formes-4">4 formes tracées. Manu place une gommette dans chaque forme selon le modèle. ACQUIS.</option>
+                <option value="tracer-traits-main-levee">Manu trace 4 traits à main levée entre des points. ACQUIS.</option>
+                <option value="tracer-lignes-droites">4 paires de points. Manu trace des lignes droites entre chaque paire. ACQUIS.</option>
+                <option value="labyrinthe-simple">Labyrinthe simple (3 embranchements). Manu trace le chemin. ACQUIS.</option>
+                <option value="decouper-4-formes">4 formes simples tracées. Manu découpe sur les contours.</option>
+                <option value="enfiler-perles-modele">Modèle avec 4 perles (rouge-bleu-rouge-bleu). Manu reproduit.</option>
+                <option value="pince-4-pompons">4 pompons à transvaser avec une pince d'un bol à l'autre.</option>
+                <option value="coller-4-gommettes-tracé">Tracé simple (cercle ou ligne). 4 gommettes à coller en suivant le tracé.</option>
+            </select>
+        </div>
+
+        <div class="activity-selector">
+            <label>👤 Autonomie :</label>
+            <select id="activity5" onchange="updateActivities()">
+                <option value="">-- Pas d'activité --</option>
+                <option value="preparer-4-affaires">Liste imagée de 4 objets. Manu prépare son cartable en cochant chaque élément.</option>
+                <option value="mettre-table-3-elements">Photo modèle avec 3 éléments (assiette, verre, couvert). Manu dispose comme sur la photo.</option>
+                <option value="routine-4-etapes">Séquence de 4 étapes (habillage, petit-déj, dents, cartable). Manu coche au fur et à mesure.</option>
+                <option value="timer-5-minutes">Timer 5 minutes pour 1 activité. Manu surveille et s'arrête quand ça sonne.</option>
+                <option value="demander-pause-picto">Carte 'Pause' disponible. Manu l'utilise quand il est fatigué.</option>
+                <option value="ranger-4-fiches">4 fiches à ranger dans le bon intercalaire. Manu range selon les pictogrammes.</option>
+                <option value="choisir-entre-3">3 activités proposées. Manu choisit celle qu'il veut faire.</option>
+            </select>
+        </div>
+
+        <div class="activity-selector">
+            <label>🎵 Discrimination auditive :</label>
+            <select id="activity6" onchange="updateActivities()">
+                <option value="">-- Pas d'activité --</option>
+                <option value="localiser-son-4">Yeux bandés, l'adulte fait un son dans 4 directions. Manu pointe chaque direction.</option>
+                <option value="sons-similaires-4">4 paires de sons proches (pa/ba, to/do, fi/vi, ka/ga). Manu dit si pareils ou différents.</option>
+                <option value="reproduire-rythme-4">L'adulte tape 4 rythmes courts (2-3 frappes). Manu reproduit chacun.</option>
+                <option value="reconnaitre-4-emotions">4 phrases enregistrées (joie, colère, tristesse, peur). Manu montre l'émotion correspondante.</option>
+                <option value="intrus-parmi-4">4 sons dont 1 différent. Manu identifie le son différent.</option>
+                <option value="tempo-4-extraits">4 extraits musicaux. Manu classe en rapide ou lent (2 de chaque).</option>
+                <option value="echo-phrase-courte">Phrase courte de 4-5 mots. Manu la répète exactement.</option>
+                <option value="reconnaitre-4-voix">4 voix familières enregistrées. Manu montre la photo de chaque personne.</option>
+            </select>
+        </div>
+
+        <div class="activity-selector">
+            <label>🎨 Arts visuels :</label>
+            <select id="activity7" onchange="updateActivities()">
+                <option value="">-- Pas d'activité --</option>
+                <option value="coloriage-4-zones">Dessin avec 4 zones. Consignes de couleur données. Manu colorie.</option>
+                <option value="tracer-4-formes">4 gabarits de formes simples. Manu trace le contour de chaque forme.</option>
+                <option value="collage-4-elements">4 éléments à découper et coller. Manu crée un collage simple.</option>
+                <option value="peinture-4-touches">4 zones marquées. Manu peint au doigt dans chaque zone.</option>
+                <option value="completer-dessin">Demi-dessin simple. Manu complète l'autre moitié en repassant les pointillés.</option>
+                <option value="gommettes-decoration">Dessin simple. 4 gommettes à placer pour décorer. Manu choisit où les coller.</option>
+                <option value="graphisme-4-lignes">4 bandes. Manu décore chacune avec des boucles ou des ponts.</option>
+            </select>
+        </div>
+
+        <div class="activity-selector">
+            <label>🧩 Logique/Manipulation :</label>
+            <select id="activity8" onchange="updateActivities()">
+                <option value="">-- Pas d'activité --</option>
+                <option value="puzzle-4-pieces">Puzzle de 4 pièces seulement. Manu reconstitue l'image.</option>
+                <option value="classer-4-objets">4 objets à classer selon 1 critère (couleur OU forme). Manu classe.</option>
+                <option value="suite-4-elements">Suite AB avec 4 éléments (rouge-bleu-rouge-bleu). Manu continue avec 2 éléments de plus.</option>
+                <option value="differences-4-max">2 images avec 4 différences seulement. Manu les entoure toutes.</option>
+                <option value="labyrinthe-simple-4">Labyrinthe avec 4 embranchements maximum. Manu trouve le bon chemin.</option>
+                <option value="memory-4-paires">Memory avec 4 paires seulement (8 cartes). Manu trouve toutes les paires.</option>
+                <option value="associer-4-paires">4 paires logiques (chaussette/chaussure, brosse/dents, fourchette/assiette, crayon/papier). Manu associe.</option>
+                <option value="tangram-4-pieces">Modèle tangram simple avec 4 pièces seulement. Manu reproduit.</option>
+                <option value="sudoku-4cases">Mini sudoku 2x2 avec 4 images. Manu complète pour avoir chaque image.</option>
+            </select>
+        </div>
+
+        <div class="activity-selector">
+            <label>🗣️ Langage oral :</label>
+            <select id="activity9" onchange="updateActivities()">
+                <option value="">-- Pas d'activité --</option>
+                <option value="raconter-4-images">Séquence de 4 images. Manu raconte l'histoire dans l'ordre.</option>
+                <option value="decrire-image-simple">Image simple avec 4 éléments. Manu décrit ce qu'il voit (qui, où, quoi, comment).</option>
+                <option value="repondre-4-questions">Courte histoire. 4 questions simples (Qui? Où? Quand? Quoi?). Manu répond.</option>
+                <option value="trier-4-categories">8 images à trier en 2 catégories (4 de chaque : animaux/objets). Manu trie.</option>
+                <option value="dire-4-contraires">4 mots simples (grand, chaud, content, plein). Manu donne le contraire de chacun.</option>
+                <option value="devinettes-4">4 devinettes très simples. Manu trouve chaque réponse.</option>
+                <option value="poser-4-questions">Carte cachée. Manu pose 4 questions pour deviner (C'est un animal? C'est rouge? etc).</option>
+                <option value="consigne-2-etapes">Consigne à 2 étapes simples (Prends le crayon et pose-le sur la table). Manu exécute.</option>
+            </select>
+        </div>
+
+        <div class="activity-selector">
+            <label>💪 Motricité globale :</label>
+            <select id="activity10" onchange="updateActivities()">
+                <option value="">-- Pas d'activité --</option>
+                <option value="equilibre-5-secondes">Manu tient en équilibre sur un pied pendant 5 secondes. Chronomètre visible.</option>
+                <option value="sauter-4-cerceaux">4 cerceaux au sol. Manu saute de l'un à l'autre à pieds joints.</option>
+                <option value="slalom-4-plots">4 plots espacés. Manu fait le slalom en marchant puis en courant.</option>
+                <option value="ramper-banc">Banc ou tunnel court. Manu rampe pour passer dessous sans toucher.</option>
+                <option value="lancer-4-fois">Cible au sol. 4 lancers de balle. Manu compte combien de réussites.</option>
+                <option value="rebondir-4-fois">Ballon. Manu le fait rebondir 4 fois de suite.</option>
+                <option value="marcher-arriere-4m">Ligne tracée de 4 mètres. Manu marche à reculons sans sortir de la ligne.</option>
+                <option value="sauter-4-fois">Manu fait 4 sauts à pieds joints. Compter ensemble à voix haute.</option>
+            </select>
+        </div>
+
+        <button class="btn-print" onclick="window.print()">🖨️ Imprimer la feuille</button>
+    </div>
+
+    <!-- Feuille A4 -->
+    <div class="fdj-container">
+        <div class="student-name">MANU</div>
+        
+        <div class="header-section">
+            <div class="date-line">Date :</div>
+            <div class="name-line">Nom :</div>
+            <div class="prenom-line">Prénom :</div>
+            
+            <div class="weather-row">
+                <div class="weather-pictos">
+                    <span class="weather-icon">☀️</span>
+                    <span class="weather-icon">⛅</span>
+                    <span class="weather-icon">☁️</span>
+                    <span class="weather-icon">🌧️</span>
+                    <span class="weather-icon">⛈️</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="activity-row" id="row1">
+            <div class="picto-cell" id="picto1"></div>
+            <div class="activity-block" id="block1"></div>
+            <div class="feedback-cell">
+                <div class="smiley happy">😊</div>
+                <div class="smiley neutral">😐</div>
+                <div class="smiley sad">😞</div>
+            </div>
+        </div>
+
+        <div class="activity-row" id="row2">
+            <div class="picto-cell" id="picto2"></div>
+            <div class="activity-block" id="block2"></div>
+            <div class="feedback-cell">
+                <div class="smiley happy">😊</div>
+                <div class="smiley neutral">😐</div>
+                <div class="smiley sad">😞</div>
+            </div>
+        </div>
+
+        <div class="activity-row" id="row3">
+            <div class="picto-cell" id="picto3"></div>
+            <div class="activity-block" id="block3"></div>
+            <div class="feedback-cell">
+                <div class="smiley happy">😊</div>
+                <div class="smiley neutral">😐</div>
+                <div class="smiley sad">😞</div>
+            </div>
+        </div>
+
+        <div class="activity-row" id="row4">
+            <div class="picto-cell" id="picto4"></div>
+            <div class="activity-block" id="block4"></div>
+            <div class="feedback-cell">
+                <div class="smiley happy">😊</div>
+                <div class="smiley neutral">😐</div>
+                <div class="smiley sad">😞</div>
+            </div>
+        </div>
+
+        <div class="activity-row" id="row5">
+            <div class="picto-cell" id="picto5"></div>
+            <div class="activity-block" id="block5"></div>
+            <div class="feedback-cell">
+                <div class="smiley happy">😊</div>
+                <div class="smiley neutral">😐</div>
+                <div class="smiley sad">😞</div>
+            </div>
+        </div>
+
+        <div class="activity-row" id="row6">
+            <div class="picto-cell" id="picto6"></div>
+            <div class="activity-block" id="block6"></div>
+            <div class="feedback-cell">
+                <div class="smiley happy">😊</div>
+                <div class="smiley neutral">😐</div>
+                <div class="smiley sad">😞</div>
+            </div>
+        </div>
+
+        <div class="activity-row" id="row7">
+            <div class="picto-cell" id="picto7"></div>
+            <div class="activity-block" id="block7"></div>
+            <div class="feedback-cell">
+                <div class="smiley happy">😊</div>
+                <div class="smiley neutral">😐</div>
+                <div class="smiley sad">😞</div>
+            </div>
+        </div>
+
+        <div class="activity-row" id="row8">
+            <div class="picto-cell" id="picto8"></div>
+            <div class="activity-block" id="block8"></div>
+            <div class="feedback-cell">
+                <div class="smiley happy">😊</div>
+                <div class="smiley neutral">😐</div>
+                <div class="smiley sad">😞</div>
+            </div>
+        </div>
+
+        <div class="activity-row" id="row9">
+            <div class="picto-cell" id="picto9"></div>
+            <div class="activity-block" id="block9"></div>
+            <div class="feedback-cell">
+                <div class="smiley happy">😊</div>
+                <div class="smiley neutral">😐</div>
+                <div class="smiley sad">😞</div>
+            </div>
+        </div>
+
+        <div class="activity-row" id="row10">
+            <div class="picto-cell" id="picto10"></div>
+            <div class="activity-block" id="block10"></div>
+            <div class="feedback-cell">
+                <div class="smiley happy">😊</div>
+                <div class="smiley neutral">😐</div>
+                <div class="smiley sad">😞</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const activitiesDB = {
+            // LECTURE/ÉCRITURE - Adapté aux compétences de Manu
+            "relier-mots-dessins": {
+                title: "Relier mots et dessins",
+                icon: "🖼️",
+                label: "Relier",
+                description: "4 dessins simples (carotte, sapin, maison, soleil) et 4 mots. Manu relie chaque dessin au bon mot.",
+                color: "#0066cc"
+            },
+            "entourer-bon-mot": {
+                title: "Entourer le bon mot",
+                icon: "🔍",
+                label: "Entourer",
+                description: "Mot cible donné (ex: maison). 4 mots proches (maison, raison, maïs, mason). Manu entoure le bon mot.",
+                color: "#0066cc"
+            },
+            "retrouver-mot-texte": {
+                title: "Retrouver un mot dans un texte",
+                icon: "📝",
+                label: "Retrouver",
+                description: "Court texte de 2-3 phrases. Mot à chercher donné (ex: vélo). Manu entoure le mot dans le texte.",
+                color: "#0066cc"
+            },
+            "colorier-mots-identiques": {
+                title: "Colorier mots identiques",
+                icon: "🎨",
+                label: "Colorier",
+                description: "Liste de 8 mots ressemblants avec 3 identiques (soleil, soleil, solex, solide, soleil, sole). Manu colorie les 3 mots identiques.",
+                color: "#0066cc"
+            },
+            "ecrire-prenom-nom": {
+                title: "Écrire prénom et nom",
+                icon: "✍️",
+                label: "Écrire",
+                description: "Manu écrit son prénom (version courte) et son nom sans modèle. Veiller à des lettres de 3cm minimum.",
+                color: "#0066cc"
+            },
+            "lecture-mots-2-syllabes": {
+                title: "Lire mots 2 syllabes",
+                icon: "📖",
+                label: "Lire",
+                description: "5 mots simples de 2 syllabes (tomate, banane, vélo, moto, salade). Manu lit chaque mot à voix haute.",
+                color: "#0066cc"
+            },
+            "copie-mots-grands": {
+                title: "Copier avec lettres 3cm",
+                icon: "📏",
+                label: "Copie",
+                description: "3 mots modèles en lettres de 3cm minimum. Manu recopie en respectant la taille des lettres.",
+                color: "#0066cc"
+            },
+            "associer-mot-phrase": {
+                title: "Mot dans une phrase",
+                icon: "💬",
+                label: "Phrase",
+                description: "Phrase courte (Manu mange une pomme). 4 images dont une correspond. Manu montre la bonne image.",
+                color: "#0066cc"
+            },
+            "completer-mot-image": {
+                title: "Compléter mot simple",
+                icon: "✏️",
+                label: "Compléter",
+                description: "Image + mot incomplet (SA__N pour sapin). Manu complète les lettres manquantes.",
+                color: "#0066cc"
+            },
+            "mots-outils-frequents": {
+                title: "Mots outils fréquents",
+                icon: "👁️",
+                label: "Mots outils",
+                description: "6 mots fréquents écrits (le, un, et, dans, avec, il). Manu lit rapidement chaque mot.",
+                color: "#0066cc"
+            },
+            
+            // MATHÉMATIQUES - Adapté aux compétences de Manu (jusqu'à 59, peu d'éléments)
+            "lire-nombres-59": {
+                title: "Lire 4 nombres jusqu'à 59",
+                icon: "🔢",
+                label: "Lire",
+                description: "4 nombres écrits (15, 28, 42, 51). Manu lit chaque nombre à voix haute. PEU D'ÉLÉMENTS.",
+                color: "#ff6600"
+            },
+            "classer-4-nombres": {
+                title: "Classer 4 nombres proches",
+                icon: "📊",
+                label: "Classer",
+                description: "4 nombres proches (23, 28, 25, 21). Manu les range du plus petit au plus grand. Utilise ses acquis.",
+                color: "#ff6600"
+            },
+            "comparer-dizaines": {
+                title: "Comparer avec dizaines",
+                icon: "⚖️",
+                label: "Comparer",
+                description: "3 paires de nombres (23 et 31, 45 et 42, 18 et 28). Manu entoure le plus grand. Travaille la difficulté.",
+                color: "#ff6600"
+            },
+            "file-numerique-courte": {
+                title: "File numérique 4 cases",
+                icon: "➡️",
+                label: "File",
+                description: "File courte avec 2 cases vides (20, __, 22, __). Manu complète les nombres manquants. PEU D'ÉLÉMENTS.",
+                color: "#ff6600"
+            },
+            "dizaines-unites-3-nombres": {
+                title: "Dizaines et unités",
+                icon: "🔟",
+                label: "D/U",
+                description: "3 nombres donnés (23, 47, 38). Pour chaque nombre, Manu dit combien de dizaines et d'unités.",
+                color: "#ff6600"
+            },
+            "additions-simples-4": {
+                title: "4 additions simples",
+                icon: "➕",
+                label: "Addition",
+                description: "4 additions (10+5, 20+3, 12+4, 15+2). Manu calcule (matériel autorisé). PEU D'ÉLÉMENTS.",
+                color: "#ff6600"
+            },
+            "soustractions-simples-4": {
+                title: "4 soustractions simples",
+                icon: "➖",
+                label: "Soustraction",
+                description: "4 soustractions (15-5, 18-8, 24-4, 19-9). Manu calcule (matériel autorisé). PEU D'ÉLÉMENTS.",
+                color: "#ff6600"
+            },
+            "probleme-illustre": {
+                title: "1 petit problème illustré",
+                icon: "🤔",
+                label: "Problème",
+                description: "1 problème simple avec dessin (J'ai 12 billes, j'en gagne 5). Manu résout. UN SEUL pour rester efficace.",
+                color: "#ff6600"
+            },
+            "monnaie-4-pieces": {
+                title: "Compter 4 pièces",
+                icon: "💰",
+                label: "Monnaie",
+                description: "4 pièces de monnaie (2x10c, 2x20c). Manu compte le total. PEU D'ÉLÉMENTS.",
+                color: "#ff6600"
+            },
+            "double-3-nombres": {
+                title: "Double de 3 nombres",
+                icon: "✖️",
+                label: "Double",
+                description: "3 nombres simples (10, 5, 12). Manu trouve le double de chacun. PEU D'ÉLÉMENTS.",
+                color: "#ff6600"
+            },
+            
+            // REPÉRAGE TEMPOREL - Adapté (ordre jours acquis, séries de 4)
+            "ordonner-jours-semaine": {
+                title: "Ordonner les jours",
+                icon: "📅",
+                label: "Jours",
+                description: "7 étiquettes jours mélangées. Manu les remet dans l'ordre (acquis à consolider).",
+                color: "#9933cc"
+            },
+            "sequencer-4-images": {
+                title: "Séquence de 4 images",
+                icon: "📖",
+                label: "Histoire",
+                description: "4 images d'une histoire (planter/arroser/pousser/cueillir). Manu les ordonne. JUSTE 4 IMAGES.",
+                color: "#9933cc"
+            },
+            "hier-aujourdhui-demain": {
+                title: "Hier/Aujourd'hui/Demain",
+                icon: "⏰",
+                label: "Temps",
+                description: "Calendrier avec aujourd'hui marqué. Manu entoure hier, aujourd'hui, demain avec 3 couleurs différentes.",
+                color: "#9933cc"
+            },
+            "saisons-4-activites": {
+                title: "4 activités et saisons",
+                icon: "🍂",
+                label: "Saisons",
+                description: "4 images d'activités (ski, plage, feuilles, fleurs). Manu associe chaque activité à sa saison. PEU D'ÉLÉMENTS.",
+                color: "#9933cc"
+            },
+            "routine-4-moments": {
+                title: "4 moments de la journée",
+                icon: "📸",
+                label: "Routine",
+                description: "4 photos de moments de Manu (réveil, école, déjeuner, coucher). Manu les remet dans l'ordre.",
+                color: "#9933cc"
+            },
+            "mois-saison-4-mois": {
+                title: "4 mois et saisons",
+                icon: "📆",
+                label: "Mois",
+                description: "4 étiquettes de mois (janvier, mai, juillet, octobre). Manu les classe par saison. PEU D'ÉLÉMENTS.",
+                color: "#9933cc"
+            },
+            "semaine-weekend": {
+                title: "Jours d'école / Week-end",
+                icon: "🗓️",
+                label: "Semaine",
+                description: "Calendrier de la semaine. Manu colorie les jours d'école en bleu et le week-end en vert.",
+                color: "#9933cc"
+            },
+            
+            // MOTRICITÉ FINE - Adapté (gommettes, traits acquis, labyrinthes)
+            "gommettes-formes-4": {
+                title: "4 gommettes selon consigne",
+                icon: "⭐",
+                label: "Gommettes",
+                description: "4 formes tracées. Manu place une gommette dans chaque forme selon le modèle. ACQUIS à consolider.",
+                color: "#cc0066"
+            },
+            "tracer-traits-main-levee": {
+                title: "Tracer 4 traits libres",
+                icon: "✏️",
+                label: "Traits",
+                description: "Manu trace 4 traits à main levée entre des points. ACQUIS à consolider.",
+                color: "#cc0066"
+            },
+            "tracer-lignes-droites": {
+                title: "Tracer 4 lignes droites",
+                icon: "📏",
+                label: "Lignes",
+                description: "4 paires de points. Manu trace des lignes droites entre chaque paire. ACQUIS à consolider.",
+                color: "#cc0066"
+            },
+            "labyrinthe-simple": {
+                title: "Labyrinthe",
+                icon: "🌀",
+                label: "Labyrinthe",
+                description: "Labyrinthe simple (3 embranchements). Manu trace le chemin. ACQUIS à consolider.",
+                color: "#cc0066"
+            },
+            "decouper-4-formes": {
+                title: "Découper 4 formes",
+                icon: "✂️",
+                label: "Découpage",
+                description: "4 formes simples tracées. Manu découpe sur les contours. PEU D'ÉLÉMENTS.",
+                color: "#cc0066"
+            },
+            "enfiler-perles-modele": {
+                title: "Enfiler 4 perles",
+                icon: "📿",
+                label: "Perles",
+                description: "Modèle avec 4 perles (rouge-bleu-rouge-bleu). Manu reproduit. PEU D'ÉLÉMENTS.",
+                color: "#cc0066"
+            },
+            "pince-4-pompons": {
+                title: "Transvaser 4 pompons",
+                icon: "🤏",
+                label: "Pince",
+                description: "4 pompons à transvaser avec une pince d'un bol à l'autre. PEU D'ÉLÉMENTS.",
+                color: "#cc0066"
+            },
+            "coller-4-gommettes-tracé": {
+                title: "Gommettes sur tracé",
+                icon: "🔵",
+                label: "Tracé",
+                description: "Tracé simple (cercle ou ligne). 4 gommettes à coller en suivant le tracé. PEU D'ÉLÉMENTS.",
+                color: "#cc0066"
+            },
+            
+            // AUTONOMIE - Adapté (tâches concrètes avec peu d'étapes)
+            "preparer-4-affaires": {
+                title: "Préparer 4 affaires",
+                icon: "🎒",
+                label: "Cartable",
+                description: "Liste imagée de 4 objets. Manu prépare son cartable en cochant chaque élément. PEU D'ÉLÉMENTS.",
+                color: "#009966"
+            },
+            "mettre-table-3-elements": {
+                title: "Mettre la table (3 éléments)",
+                icon: "🍽️",
+                label: "Table",
+                description: "Photo modèle avec 3 éléments (assiette, verre, couvert). Manu dispose comme sur la photo. PEU D'ÉLÉMENTS.",
+                color: "#009966"
+            },
+            "routine-4-etapes": {
+                title: "Routine 4 étapes",
+                icon: "☀️",
+                label: "Routine",
+                description: "Séquence de 4 étapes (habillage, petit-déj, dents, cartable). Manu coche au fur et à mesure. PEU D'ÉLÉMENTS.",
+                color: "#009966"
+            },
+            "timer-5-minutes": {
+                title: "Gérer 5 minutes",
+                icon: "⏱️",
+                label: "Timer",
+                description: "Timer 5 minutes pour 1 activité. Manu surveille et s'arrête quand ça sonne.",
+                color: "#009966"
+            },
+            "demander-pause-picto": {
+                title: "Demander une pause",
+                icon: "✋",
+                label: "Pause",
+                description: "Carte 'Pause' disponible. Manu l'utilise quand il est fatigué.",
+                color: "#009966"
+            },
+            "ranger-4-fiches": {
+                title: "Ranger 4 fiches",
+                icon: "📁",
+                label: "Ranger",
+                description: "4 fiches à ranger dans le bon intercalaire. Manu range selon les pictogrammes. PEU D'ÉLÉMENTS.",
+                color: "#009966"
+            },
+            "choisir-entre-3": {
+                title: "Choisir parmi 3 activités",
+                icon: "🤔",
+                label: "Choix",
+                description: "3 activités proposées. Manu choisit celle qu'il veut faire. PEU D'ÉLÉMENTS pour être efficace.",
+                color: "#009966"
+            },
+            
+            // DISCRIMINATION AUDITIVE - Adapté (4 éléments maximum)
+            "localiser-son-4": {
+                title: "Localiser 4 sons",
+                icon: "👂",
+                label: "Localiser",
+                description: "Yeux bandés, l'adulte fait un son dans 4 directions. Manu pointe chaque direction. PEU D'ÉLÉMENTS.",
+                color: "#00cccc"
+            },
+            "sons-similaires-4": {
+                title: "4 paires de sons",
+                icon: "🔊",
+                label: "Sons",
+                description: "4 paires de sons proches (pa/ba, to/do, fi/vi, ka/ga). Manu dit si pareils ou différents. PEU D'ÉLÉMENTS.",
+                color: "#00cccc"
+            },
+            "reproduire-rythme-4": {
+                title: "Reproduire 4 rythmes",
+                icon: "🥁",
+                label: "Rythme",
+                description: "L'adulte tape 4 rythmes courts (2-3 frappes). Manu reproduit chacun. PEU D'ÉLÉMENTS.",
+                color: "#00cccc"
+            },
+            "reconnaitre-4-emotions": {
+                title: "4 émotions vocales",
+                icon: "😊",
+                label: "Émotion",
+                description: "4 phrases enregistrées (joie, colère, tristesse, peur). Manu montre l'émotion correspondante.",
+                color: "#00cccc"
+            },
+            "intrus-parmi-4": {
+                title: "Intrus parmi 4 sons",
+                icon: "🔍",
+                label: "Intrus",
+                description: "4 sons dont 1 différent. Manu identifie le son différent. PEU D'ÉLÉMENTS.",
+                color: "#00cccc"
+            },
+            "tempo-4-extraits": {
+                title: "4 extraits musicaux",
+                icon: "🎼",
+                label: "Tempo",
+                description: "4 extraits musicaux. Manu classe en rapide ou lent (2 de chaque). PEU D'ÉLÉMENTS.",
+                color: "#00cccc"
+            },
+            "echo-phrase-courte": {
+                title: "Répéter phrase courte",
+                icon: "🗣️",
+                label: "Écho",
+                description: "Phrase courte de 4-5 mots. Manu la répète exactement.",
+                color: "#00cccc"
+            },
+            "reconnaitre-4-voix": {
+                title: "Reconnaître 4 voix",
+                icon: "👥",
+                label: "Voix",
+                description: "4 voix familières enregistrées. Manu montre la photo de chaque personne. PEU D'ÉLÉMENTS.",
+                color: "#00cccc"
+            },
+            
+            // ARTS VISUELS - Adapté (tâches simples et visuelles)
+            "coloriage-4-zones": {
+                title: "Colorier 4 zones",
+                icon: "🖍️",
+                label: "Coloriage",
+                description: "Dessin avec 4 zones. Consignes de couleur données. Manu colorie. PEU D'ÉLÉMENTS.",
+                color: "#ff3399"
+            },
+            "tracer-4-formes": {
+                title: "Tracer 4 formes",
+                icon: "⭕",
+                label: "Formes",
+                description: "4 gabarits de formes simples. Manu trace le contour de chaque forme. PEU D'ÉLÉMENTS.",
+                color: "#ff3399"
+            },
+            "collage-4-elements": {
+                title: "Collage 4 éléments",
+                icon: "📰",
+                label: "Collage",
+                description: "4 éléments à découper et coller. Manu crée un collage simple. PEU D'ÉLÉMENTS.",
+                color: "#ff3399"
+            },
+            "peinture-4-touches": {
+                title: "4 touches de peinture",
+                icon: "🎨",
+                label: "Peinture",
+                description: "4 zones marquées. Manu peint au doigt dans chaque zone. PEU D'ÉLÉMENTS.",
+                color: "#ff3399"
+            },
+            "completer-dessin": {
+                title: "Compléter un dessin",
+                icon: "🦋",
+                label: "Symétrie",
+                description: "Demi-dessin simple. Manu complète l'autre moitié en repassant les pointillés.",
+                color: "#ff3399"
+            },
+            "gommettes-decoration": {
+                title: "Décorer avec 4 gommettes",
+                icon: "⭐",
+                label: "Décoration",
+                description: "Dessin simple. 4 gommettes à placer pour décorer. Manu choisit où les coller.",
+                color: "#ff3399"
+            },
+            "graphisme-4-lignes": {
+                title: "Graphisme 4 lignes",
+                icon: "〰️",
+                label: "Graphisme",
+                description: "4 bandes. Manu décore chacune avec des boucles ou des ponts. PEU D'ÉLÉMENTS.",
+                color: "#ff3399"
+            },
+            
+            // LOGIQUE/MANIPULATION - Adapté (séries de 4, peu d'éléments)
+            "puzzle-4-pieces": {
+                title: "Puzzle 4 pièces",
+                icon: "🧩",
+                label: "Puzzle",
+                description: "Puzzle de 4 pièces seulement. Manu reconstitue l'image. PEU D'ÉLÉMENTS pour rester efficace.",
+                color: "#ff9900"
+            },
+            "classer-4-objets": {
+                title: "Classer 4 objets",
+                icon: "📊",
+                label: "Classer",
+                description: "4 objets à classer selon 1 critère (couleur OU forme). Manu classe. PEU D'ÉLÉMENTS.",
+                color: "#ff9900"
+            },
+            "suite-4-elements": {
+                title: "Suite de 4 éléments",
+                icon: "🔴",
+                label: "Suite",
+                description: "Suite AB avec 4 éléments (rouge-bleu-rouge-bleu). Manu continue avec 2 éléments de plus.",
+                color: "#ff9900"
+            },
+            "differences-4-max": {
+                title: "Trouver 4 différences",
+                icon: "🔍",
+                label: "Différences",
+                description: "2 images avec 4 différences seulement. Manu les entoure toutes. PEU D'ÉLÉMENTS.",
+                color: "#ff9900"
+            },
+            "labyrinthe-simple-4": {
+                title: "Labyrinthe 4 chemins",
+                icon: "🌀",
+                label: "Labyrinthe",
+                description: "Labyrinthe avec 4 embranchements maximum. Manu trouve le bon chemin. PEU D'ÉLÉMENTS.",
+                color: "#ff9900"
+            },
+            "memory-4-paires": {
+                title: "Memory 4 paires",
+                icon: "🃏",
+                label: "Memory",
+                description: "Memory avec 4 paires seulement (8 cartes). Manu trouve toutes les paires. PEU D'ÉLÉMENTS.",
+                color: "#ff9900"
+            },
+            "associer-4-paires": {
+                title: "4 paires logiques",
+                icon: "👞",
+                label: "Paires",
+                description: "4 paires logiques (chaussette/chaussure, brosse/dents, fourchette/assiette, crayon/papier). Manu associe.",
+                color: "#ff9900"
+            },
+            "tangram-4-pieces": {
+                title: "Tangram 4 pièces",
+                icon: "🔷",
+                label: "Tangram",
+                description: "Modèle tangram simple avec 4 pièces seulement. Manu reproduit. PEU D'ÉLÉMENTS.",
+                color: "#ff9900"
+            },
+            "sudoku-4cases": {
+                title: "Sudoku 4 cases",
+                icon: "🎯",
+                label: "Sudoku",
+                description: "Mini sudoku 2x2 avec 4 images. Manu complète pour avoir chaque image. PEU D'ÉLÉMENTS.",
+                color: "#ff9900"
+            },
+            
+            // LANGAGE ORAL - Adapté (communication fonctionnelle, 4 éléments max)
+            "raconter-4-images": {
+                title: "Raconter 4 images",
+                icon: "📖",
+                label: "Raconter",
+                description: "Séquence de 4 images. Manu raconte l'histoire dans l'ordre. PEU D'ÉLÉMENTS.",
+                color: "#6600cc"
+            },
+            "decrire-image-simple": {
+                title: "Décrire une scène",
+                icon: "🖼️",
+                label: "Décrire",
+                description: "Image simple avec 4 éléments. Manu décrit ce qu'il voit (qui, où, quoi, comment).",
+                color: "#6600cc"
+            },
+            "repondre-4-questions": {
+                title: "4 questions sur histoire",
+                icon: "❓",
+                label: "Questions",
+                description: "Courte histoire. 4 questions simples (Qui? Où? Quand? Quoi?). Manu répond. PEU D'ÉLÉMENTS.",
+                color: "#6600cc"
+            },
+            "trier-4-categories": {
+                title: "Trier en 4 catégories",
+                icon: "📦",
+                label: "Catégories",
+                description: "8 images à trier en 2 catégories (4 de chaque : animaux/objets). Manu trie. PEU D'ÉLÉMENTS.",
+                color: "#6600cc"
+            },
+            "dire-4-contraires": {
+                title: "4 contraires",
+                icon: "⬆️",
+                label: "Contraires",
+                description: "4 mots simples (grand, chaud, content, plein). Manu donne le contraire de chacun.",
+                color: "#6600cc"
+            },
+            "devinettes-4": {
+                title: "4 devinettes simples",
+                icon: "🤔",
+                label: "Devinettes",
+                description: "4 devinettes très simples. Manu trouve chaque réponse. PEU D'ÉLÉMENTS.",
+                color: "#6600cc"
+            },
+            "poser-4-questions": {
+                title: "Poser 4 questions",
+                icon: "💬",
+                label: "Question",
+                description: "Carte cachée. Manu pose 4 questions pour deviner (C'est un animal? C'est rouge? etc).",
+                color: "#6600cc"
+            },
+            "consigne-2-etapes": {
+                title: "Consigne 2 étapes",
+                icon: "📋",
+                label: "Consigne",
+                description: "Consigne à 2 étapes simples (Prends le crayon et pose-le sur la table). Manu exécute.",
+                color: "#6600cc"
+            },
+            
+            // MOTRICITÉ GLOBALE - Adapté (mouvements simples et clairs)
+            "equilibre-5-secondes": {
+                title: "Équilibre 5 secondes",
+                icon: "🦵",
+                label: "Équilibre",
+                description: "Manu tient en équilibre sur un pied pendant 5 secondes. Chronomètre visible.",
+                color: "#cc3300"
+            },
+            "sauter-4-cerceaux": {
+                title: "4 cerceaux",
+                icon: "⭕",
+                label: "Cerceaux",
+                description: "4 cerceaux au sol. Manu saute de l'un à l'autre à pieds joints. PEU D'ÉLÉMENTS.",
+                color: "#cc3300"
+            },
+            "slalom-4-plots": {
+                title: "Slalom 4 plots",
+                icon: "🚩",
+                label: "Slalom",
+                description: "4 plots espacés. Manu fait le slalom en marchant puis en courant. PEU D'ÉLÉMENTS.",
+                color: "#cc3300"
+            },
+            "ramper-banc": {
+                title: "Ramper sous le banc",
+                icon: "🚇",
+                label: "Ramper",
+                description: "Banc ou tunnel court. Manu rampe pour passer dessous sans toucher.",
+                color: "#cc3300"
+            },
+            "lancer-4-fois": {
+                title: "Lancer 4 fois",
+                icon: "🎯",
+                label: "Lancer",
+                description: "Cible au sol. 4 lancers de balle. Manu compte combien de réussites. PEU D'ÉLÉMENTS.",
+                color: "#cc3300"
+            },
+            "rebondir-4-fois": {
+                title: "4 rebonds de ballon",
+                icon: "⚽",
+                label: "Dribble",
+                description: "Ballon. Manu le fait rebondir 4 fois de suite. PEU D'ÉLÉMENTS pour être efficace.",
+                color: "#cc3300"
+            },
+            "marcher-arriere-4m": {
+                title: "Marcher à reculons 4m",
+                icon: "↩️",
+                label: "Reculer",
+                description: "Ligne tracée de 4 mètres. Manu marche à reculons sans sortir de la ligne.",
+                color: "#cc3300"
+            },
+            "sauter-4-fois": {
+                title: "4 sauts pieds joints",
+                icon: "🦘",
+                label: "Sauter",
+                description: "Manu fait 4 sauts à pieds joints. Compter ensemble à voix haute. PEU D'ÉLÉMENTS.",
+                color: "#cc3300"
+            }
+        };
+
+        function updateActivities() {
+            for (let i = 1; i <= 10; i++) {
+                const select = document.getElementById(`activity${i}`);
+                const value = select.value;
+                const row = document.getElementById(`row${i}`);
+                const pictoCell = document.getElementById(`picto${i}`);
+                const block = document.getElementById(`block${i}`);
+                
+                if (value && activitiesDB[value]) {
+                    const activity = activitiesDB[value];
+                    row.classList.remove('empty');
+                    pictoCell.innerHTML = `
+                        <div class="picto-icon">${activity.icon}</div>
+                        <div class="picto-label">${activity.label}</div>
+                    `;
+                    block.innerHTML = `
+                        <div class="activity-title" style="color: ${activity.color};">${activity.title}</div>
+                        <div class="activity-description">${activity.description}</div>
+                    `;
+                    // Rendre le bloc éditable
+                    block.setAttribute('contenteditable', 'true');
+                } else {
+                    row.classList.add('empty');
+                    pictoCell.innerHTML = '';
+                    block.innerHTML = '';
+                    block.removeAttribute('contenteditable');
+                }
+            }
+        }
+
+        updateActivities();
+    </script>
+    
+    <!-- Enregistrement du Service Worker pour mode hors ligne -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(registration => {
+                        console.log('✅ Service Worker enregistré:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('❌ Échec Service Worker:', error);
+                    });
+            });
+        }
+        
+        // Afficher le bandeau d'installation sur iOS Safari
+        window.addEventListener('load', () => {
+            // Détecter si on est sur iOS Safari et pas déjà installé
+            const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+            const isStandalone = window.navigator.standalone === true;
+            
+            if (isIOS && !isStandalone) {
+                // Afficher le bandeau après 2 secondes
+                setTimeout(() => {
+                    document.getElementById('install-banner').style.display = 'block';
+                }, 2000);
+            }
+        });
+    </script>
+</body>
+</html>
